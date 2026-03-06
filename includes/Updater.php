@@ -31,7 +31,11 @@ class Updater {
     /**
      * Check GitHub for a newer release and inject it into the update transient.
      */
-    public function check_for_update(object $transient): object {
+    public function check_for_update($transient) {
+        if (!is_object($transient)) {
+            $transient = new \stdClass();
+        }
+
         if (empty($transient->checked)) {
             return $transient;
         }
@@ -73,7 +77,7 @@ class Updater {
     /**
      * Provide plugin details for the "View details" modal in the update screen.
      */
-    public function plugin_info($result, string $action, object $args) {
+    public function plugin_info($result, $action, $args) {
         if ($action !== 'plugin_information') {
             return $result;
         }
@@ -131,8 +135,12 @@ class Updater {
      */
     private function get_latest_release(): ?array {
         $cached = get_transient($this->cache_key);
-        if ($cached !== false) {
-            return $cached ?: null;
+        if (is_array($cached) && !empty($cached['tag_name'])) {
+            return $cached;
+        }
+        // If cached as 'none', a previous check found nothing — respect the TTL.
+        if ($cached === 'none') {
+            return null;
         }
 
         $response = wp_remote_get(
@@ -147,14 +155,14 @@ class Updater {
         );
 
         if (is_wp_error($response) || wp_remote_retrieve_response_code($response) !== 200) {
-            // Cache the failure so we don't hammer the API.
-            set_transient($this->cache_key, '', $this->cache_ttl);
+            // Cache the failure briefly (10 min) so we don't hammer the API.
+            set_transient($this->cache_key, 'none', 600);
             return null;
         }
 
         $body = json_decode(wp_remote_retrieve_body($response), true);
         if (empty($body['tag_name'])) {
-            set_transient($this->cache_key, '', $this->cache_ttl);
+            set_transient($this->cache_key, 'none', 600);
             return null;
         }
 
