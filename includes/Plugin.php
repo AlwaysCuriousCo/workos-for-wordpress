@@ -330,41 +330,44 @@ class Plugin {
             [$this, 'render_api_config_page']
         );
 
-        add_submenu_page(
-            'workos-settings',
-            __('Roles', 'workos-for-wordpress'),
-            __('Roles', 'workos-for-wordpress'),
-            'manage_options',
-            'workos-role-mapping',
-            [$this, 'render_role_mapping_page']
-        );
+        // Only show additional pages when API Key and Client ID are configured.
+        if ($this->is_configured()) {
+            add_submenu_page(
+                'workos-settings',
+                __('Roles', 'workos-for-wordpress'),
+                __('Roles', 'workos-for-wordpress'),
+                'manage_options',
+                'workos-role-mapping',
+                [$this, 'render_role_mapping_page']
+            );
 
-        add_submenu_page(
-            'workos-settings',
-            __('Usage', 'workos-for-wordpress'),
-            __('Usage', 'workos-for-wordpress'),
-            'manage_options',
-            'workos-usage',
-            [$this, 'render_usage_page']
-        );
+            add_submenu_page(
+                'workos-settings',
+                __('Usage', 'workos-for-wordpress'),
+                __('Usage', 'workos-for-wordpress'),
+                'manage_options',
+                'workos-usage',
+                [$this, 'render_usage_page']
+            );
 
-        add_submenu_page(
-            'workos-settings',
-            __('Learning Mode', 'workos-for-wordpress'),
-            __('Learning Mode', 'workos-for-wordpress'),
-            'manage_options',
-            'workos-learning-mode',
-            [$this, 'render_learning_mode_page']
-        );
+            add_submenu_page(
+                'workos-settings',
+                __('Learning Mode', 'workos-for-wordpress'),
+                __('Learning Mode', 'workos-for-wordpress'),
+                'manage_options',
+                'workos-learning-mode',
+                [$this, 'render_learning_mode_page']
+            );
 
-        add_submenu_page(
-            'workos-settings',
-            __('Diagnostics', 'workos-for-wordpress'),
-            __('Diagnostics', 'workos-for-wordpress'),
-            'manage_options',
-            'workos-diagnostics',
-            [$this, 'render_diagnostics_page']
-        );
+            add_submenu_page(
+                'workos-settings',
+                __('Diagnostics', 'workos-for-wordpress'),
+                __('Diagnostics', 'workos-for-wordpress'),
+                'manage_options',
+                'workos-diagnostics',
+                [$this, 'render_diagnostics_page']
+            );
+        }
     }
 
     public function register_settings(): void {
@@ -426,12 +429,15 @@ class Plugin {
         $logo_url = plugins_url('WorkOS-branding/SVG/WorkOS_Lockup_Full_Color.svg', WORKOS_WP_PLUGIN_FILE);
 
         $tabs = [
-            'workos-settings'      => __('Welcome', 'workos-for-wordpress'),
-            'workos-role-mapping'  => __('Roles', 'workos-for-wordpress'),
-            'workos-learning-mode' => __('Learning Mode', 'workos-for-wordpress'),
-            'workos-usage'         => __('Usage', 'workos-for-wordpress'),
-            'workos-diagnostics'   => __('Diagnostics', 'workos-for-wordpress'),
+            'workos-settings' => __('Welcome', 'workos-for-wordpress'),
         ];
+
+        if ($this->is_configured()) {
+            $tabs['workos-role-mapping']  = __('Roles', 'workos-for-wordpress');
+            $tabs['workos-learning-mode'] = __('Learning Mode', 'workos-for-wordpress');
+            $tabs['workos-usage']         = __('Usage', 'workos-for-wordpress');
+            $tabs['workos-diagnostics']   = __('Diagnostics', 'workos-for-wordpress');
+        }
         ?>
         <div class="workos-global-header">
             <div class="workos-global-header-left">
@@ -722,6 +728,13 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                 <?php if ($this->is_configured() && !empty($org_id) && empty($workos_roles)): ?>
                     <div class="workos-alert workos-alert-error">
                         <?php esc_html_e('Could not fetch roles for this organization. Verify the organization is correct and your API key has access.', 'workos-for-wordpress'); ?>
+                        <?php
+                        // Show the actual error for debugging.
+                        $role_error = $this->fetch_workos_roles_error($org_id);
+                        if ($role_error) {
+                            echo '<br><small>' . esc_html($role_error) . '</small>';
+                        }
+                        ?>
                     </div>
                 <?php endif; ?>
 
@@ -1853,6 +1866,19 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
             return $role_data;
         } catch (\Exception $e) {
             return [];
+        }
+    }
+
+    /**
+     * Attempt to fetch roles and return the error message if it fails.
+     */
+    private function fetch_workos_roles_error(string $org_id): ?string {
+        try {
+            $orgs = new \WorkOS\Organizations();
+            $orgs->listOrganizationRoles($org_id);
+            return null;
+        } catch (\Exception $e) {
+            return $e->getMessage();
         }
     }
 
