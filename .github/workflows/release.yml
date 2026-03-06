@@ -1,0 +1,104 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'workos-for-wordpress.php'
+
+permissions:
+  contents: write
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.detect.outputs.version }}
+      changed: ${{ steps.detect.outputs.changed }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect version bump
+        id: detect
+        run: |
+          VERSION=$(grep -oP "Version:\s*\K[0-9]+\.[0-9]+\.[0-9]+" workos-for-wordpress.php)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          # Check if the version line changed in this commit.
+          if git diff HEAD~1 HEAD -- workos-for-wordpress.php | grep -qP '^\+.*Version:\s'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Skip if no version change
+        if: steps.detect.outputs.changed != 'true'
+        run: echo "No version bump detected — skipping release."
+
+  release:
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check tag doesn't already exist
+        run: |
+          if git ls-remote --tags origin | grep -q "refs/tags/v${{ needs.check-version.outputs.version }}$"; then
+            echo "::error::Tag v${{ needs.check-version.outputs.version }} already exists."
+            exit 1
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Install production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
+
+      - name: Build plugin zip
+        run: |
+          PLUGIN_SLUG="workos-for-wordpress"
+          VERSION="${{ needs.check-version.outputs.version }}"
+          BUILD_DIR=$(mktemp -d)
+          DEST="$BUILD_DIR/$PLUGIN_SLUG"
+          mkdir -p "$DEST"
+
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='node_modules' \
+            --exclude='dist' \
+            --exclude='bin' \
+            --exclude='tests' \
+            --exclude='.env' \
+            --exclude='composer.lock' \
+            --exclude='phpunit.xml*' \
+            --exclude='.phpcs.xml*' \
+            --exclude='.editorconfig' \
+            --exclude='.gitignore' \
+            --exclude='.claude' \
+            --exclude='CLAUDE.md' \
+            ./ "$DEST/"
+
+          cd "$BUILD_DIR"
+          zip -rq "$GITHUB_WORKSPACE/$PLUGIN_SLUG-$VERSION.zip" "$PLUGIN_SLUG"
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.check-version.outputs.version }}"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" \
+            "workos-for-wordpress-$VERSION.zip" \
+            --title "v$VERSION" \
+            --generate-notes
