@@ -72,6 +72,7 @@ class Plugin {
 
         add_action('admin_menu', [$this, 'register_settings_page']);
         add_action('admin_init', [$this, 'register_settings']);
+        add_action('admin_notices', [$this, 'admin_notices']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']);
 
         // Initialize AuthKit if configured.
@@ -277,6 +278,48 @@ class Plugin {
 
     public function deactivate(): void {
         flush_rewrite_rules();
+    }
+
+    /**
+     * Show admin notices for configuration issues.
+     */
+    public function admin_notices(): void {
+        if (!current_user_can('manage_options') || !$this->is_configured()) {
+            return;
+        }
+
+        // Warn if registration is enabled but the default role has no WorkOS role mapping.
+        if (get_option('users_can_register')) {
+            $default_role = get_option('default_role', 'subscriber');
+            $role_map = get_option('workos_role_map', []);
+
+            $has_mapping = false;
+            if (is_array($role_map)) {
+                foreach ($role_map as $mapping) {
+                    if (($mapping['wp_role'] ?? '') === $default_role) {
+                        $has_mapping = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!$has_mapping) {
+                $role_names = wp_roles()->get_names();
+                $role_label = isset($role_names[$default_role]) ? translate_user_role($role_names[$default_role]) : $default_role;
+                $roles_url = admin_url('admin.php?page=workos-role-mapping');
+
+                printf(
+                    '<div class="notice notice-warning"><p><strong>%s:</strong> %s <a href="%s">%s</a></p></div>',
+                    esc_html__('WorkOS', 'workos-for-wordpress'),
+                    esc_html(sprintf(
+                        __('User registration is enabled but the default role "%s" has no WorkOS role mapping. New users will be assigned this role without a corresponding WorkOS role.', 'workos-for-wordpress'),
+                        $role_label
+                    )),
+                    esc_url($roles_url),
+                    esc_html__('Configure role mapping', 'workos-for-wordpress')
+                );
+            }
+        }
     }
 
     /**
