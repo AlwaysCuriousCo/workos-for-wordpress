@@ -86,6 +86,13 @@ class Plugin {
         // Learning Mode AJAX handlers.
         add_action('wp_ajax_workos_learning_mode_sync', [$this, 'handle_learning_mode_sync']);
         add_action('wp_ajax_workos_learning_mode_sync_single', [$this, 'handle_learning_mode_sync_single']);
+
+        // Users table: WorkOS status column and reSync action.
+        add_filter('manage_users_columns', [$this, 'add_users_workos_column']);
+        add_filter('manage_users_custom_column', [$this, 'render_users_workos_column'], 10, 3);
+        add_filter('user_row_actions', [$this, 'add_users_resync_action'], 10, 2);
+        add_action('wp_ajax_workos_resync_user', [$this, 'handle_resync_user']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_users_table_assets']);
     }
 
     /**
@@ -1232,6 +1239,349 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
         $results = $lm->run_batch_sync();
 
         wp_send_json_success($results);
+    }
+
+    /**
+     * Add a "WorkOS" column to the Users list table.
+     */
+    public function add_users_workos_column(array $columns): array {
+        $columns['workos_status'] = __('WorkOS', 'workos-for-wordpress');
+        return $columns;
+    }
+
+    /**
+     * Render the WorkOS status badge in the Users list table.
+     */
+    public function render_users_workos_column(string $output, string $column_name, int $user_id): string {
+        if ($column_name !== 'workos_status') {
+            return $output;
+        }
+
+        $suspended = get_user_meta($user_id, '_workos_suspended', true);
+        $synced_at = get_user_meta($user_id, '_workos_synced_at', true);
+        $workos_user_id = get_user_meta($user_id, '_workos_user_id', true);
+
+        if (!empty($suspended)) {
+            $reason = get_user_meta($user_id, '_workos_suspended_reason', true);
+            $reason_label = $reason === 'not_found_in_workos'
+                ? __('Not found in WorkOS', 'workos-for-wordpress')
+                : __('No org membership', 'workos-for-wordpress');
+            return sprintf(
+                '<span class="workos-users-badge workos-users-badge-suspended" title="%s">%s</span>',
+                esc_attr($reason_label),
+                esc_html__('Suspended', 'workos-for-wordpress')
+            );
+        }
+
+        if (!empty($synced_at)) {
+            return sprintf(
+                '<span class="workos-users-badge workos-users-badge-synced" title="%s">%s</span>',
+                esc_attr(sprintf(__('Synced %s', 'workos-for-wordpress'), $synced_at)),
+                esc_html__('Synced', 'workos-for-wordpress')
+            );
+        }
+
+        if (!empty($workos_user_id)) {
+            return sprintf(
+                '<span class="workos-users-badge workos-users-badge-linked">%s</span>',
+                esc_html__('Linked', 'workos-for-wordpress')
+            );
+        }
+
+        return sprintf(
+            '<span class="workos-users-badge workos-users-badge-pending">%s</span>',
+            esc_html__('Not synced', 'workos-for-wordpress')
+        );
+    }
+
+    /**
+     * Add a "reSync" row action to users in the Users list table.
+     */
+    public function add_users_resync_action(array $actions, \WP_User $user): array {
+        if (!current_user_can('manage_options') || !$this->is_configured()) {
+            return $actions;
+        }
+
+        $label = LearningMode::is_enabled()
+            ? __('reSync to WorkOS', 'workos-for-wordpress')
+            : __('reSync from WorkOS', 'workos-for-wordpress');
+
+        $actions['workos_resync'] = sprintf(
+            '<a href="#" class="workos-resync-user" data-user-id="%d" data-nonce="%s">%s</a>',
+            $user->ID,
+            wp_create_nonce('workos_resync_user_' . $user->ID),
+            esc_html($label)
+        );
+
+        return $actions;
+    }
+
+    /**
+     * AJAX handler: reSync a single user from the Users table.
+     *
+     * Learning Mode ON  → push WP user to WorkOS (create/link + org membership).
+     * Learning Mode OFF → verify user exists in WorkOS with org membership;
+     *                      if not, suspend the local WordPress user (remove all roles).
+     */
+    public function handle_resync_user(): void {
+        $user_id = (int) ($_POST['user_id'] ?? 0);
+
+        check_ajax_referer('workos_resync_user_' . $user_id);
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Permission denied.', 'workos-for-wordpress')], 403);
+        }
+
+        $user = get_user_by('id', $user_id);
+        if (!$user) {
+            wp_send_json_error(['message' => __('User not found.', 'workos-for-wordpress')]);
+        }
+
+        // Don't allow deleting the current admin.
+        if (!LearningMode::is_enabled() && (int) $user->ID === get_current_user_id()) {
+            wp_send_json_error([
+                'message' => __('Cannot reSync yourself — your own account is protected.', 'workos-for-wordpress'),
+            ]);
+        }
+
+        if (LearningMode::is_enabled()) {
+            $this->resync_push($user);
+        } else {
+            $this->resync_pull($user);
+        }
+    }
+
+    /**
+     * Push mode: sync the WordPress user into WorkOS.
+     */
+    private function resync_push(\WP_User $user): void {
+        delete_user_meta($user->ID, '_workos_synced_at');
+        delete_user_meta($user->ID, '_workos_suspended');
+        delete_user_meta($user->ID, '_workos_suspended_reason');
+        delete_user_meta($user->ID, '_workos_suspended_at');
+
+        $lm = new LearningMode();
+        $result = $lm->sync_user($user);
+
+        if ($result['success']) {
+            wp_send_json_success($result);
+        } else {
+            wp_send_json_error($result);
+        }
+    }
+
+    /**
+     * Pull mode: verify user exists in WorkOS with active org membership.
+     * If not found or no membership, delete the local WordPress user.
+     */
+    private function resync_pull(\WP_User $user): void {
+        $org_id = $this->get_organization_id();
+        $um = new \WorkOS\UserManagement();
+
+        try {
+            // Look up by email in WorkOS.
+            [$before, $after, $users] = $um->listUsers(email: $user->user_email, limit: 1);
+            $workos_user = !empty($users) ? $users[0] : null;
+
+            if (!$workos_user) {
+                $this->suspend_local_user($user, 'not_found_in_workos');
+                return;
+            }
+
+            // Check for active org membership.
+            if (!empty($org_id)) {
+                [$before, $after, $memberships] = $um->listOrganizationMemberships(
+                    userId: $workos_user->id,
+                    organizationId: $org_id,
+                    limit: 1
+                );
+
+                $has_active = false;
+                if (!empty($memberships)) {
+                    $status = $memberships[0]->status ?? 'active';
+                    $has_active = ($status === 'active');
+                }
+
+                if (!$has_active) {
+                    $this->suspend_local_user($user, 'no_org_membership');
+                    return;
+                }
+            }
+
+            // User exists with membership — clear any suspension and update meta.
+            delete_user_meta($user->ID, '_workos_suspended');
+            delete_user_meta($user->ID, '_workos_suspended_reason');
+            delete_user_meta($user->ID, '_workos_suspended_at');
+            update_user_meta($user->ID, '_workos_user_id', $workos_user->id);
+            if (!empty($org_id)) {
+                update_user_meta($user->ID, '_workos_organization_id', $org_id);
+            }
+            update_user_meta($user->ID, '_workos_synced_at', current_time('mysql', true));
+
+            // Sync role from WorkOS membership.
+            if (!empty($memberships)) {
+                $workos_role_slug = $memberships[0]->role->slug ?? null;
+                if ($workos_role_slug) {
+                    $wp_role = self::get_wp_role_for_workos_role($workos_role_slug);
+                    if ($wp_role && !in_array($wp_role, $user->roles, true)) {
+                        $user->set_role($wp_role);
+                    }
+                    update_user_meta($user->ID, '_workos_role_slug', $workos_role_slug);
+                }
+            }
+
+            wp_send_json_success([
+                'action'  => 'verified',
+                'message' => sprintf(
+                    __('User %s verified in WorkOS with active org membership.', 'workos-for-wordpress'),
+                    $user->user_email
+                ),
+            ]);
+
+        } catch (\Exception $e) {
+            wp_send_json_error([
+                'action'  => 'error',
+                'message' => sprintf(
+                    __('Failed to verify %s: %s', 'workos-for-wordpress'),
+                    $user->user_email,
+                    $e->getMessage()
+                ),
+            ]);
+        }
+    }
+
+    /**
+     * Suspend a local WordPress user who is not entitled via WorkOS.
+     * Sets their role to empty (no capabilities) to prevent login.
+     */
+    private function suspend_local_user(\WP_User $user, string $reason): void {
+        $email = $user->user_email;
+
+        // Remove all roles — user will have zero capabilities.
+        $user->set_role('');
+
+        update_user_meta($user->ID, '_workos_suspended', '1');
+        update_user_meta($user->ID, '_workos_suspended_reason', $reason);
+        update_user_meta($user->ID, '_workos_suspended_at', current_time('mysql', true));
+
+        // Clear sync meta since they're no longer entitled.
+        delete_user_meta($user->ID, '_workos_synced_at');
+
+        ActivityLog::record('user_suspended', [
+            'user_id'    => $user->ID,
+            'user_email' => $email,
+            'metadata'   => ['reason' => $reason],
+        ]);
+
+        wp_send_json_success([
+            'action'  => 'suspended',
+            'message' => sprintf(
+                __('User %s suspended — %s.', 'workos-for-wordpress'),
+                $email,
+                $reason === 'not_found_in_workos'
+                    ? __('not found in WorkOS', 'workos-for-wordpress')
+                    : __('no active organization membership', 'workos-for-wordpress')
+            ),
+        ]);
+    }
+
+    /**
+     * Enqueue inline CSS and JS for WorkOS column on the Users table.
+     */
+    public function enqueue_users_table_assets(string $hook): void {
+        if ($hook !== 'users.php') {
+            return;
+        }
+
+        wp_register_style('workos-users-table', false);
+        wp_enqueue_style('workos-users-table');
+        wp_add_inline_style('workos-users-table', '
+            .workos-users-badge {
+                display: inline-flex;
+                align-items: center;
+                height: 22px;
+                padding: 0 8px;
+                font-size: 11px;
+                font-weight: 500;
+                border-radius: 999px;
+                letter-spacing: 0.02em;
+            }
+            .workos-users-badge-synced {
+                background: rgba(48, 164, 108, 0.08);
+                color: #30A46C;
+            }
+            .workos-users-badge-linked {
+                background: rgba(108, 71, 255, 0.08);
+                color: #6C47FF;
+            }
+            .workos-users-badge-pending {
+                background: #F9F9FB;
+                color: #8B8D98;
+                border: 1px solid #E0E1E6;
+            }
+            .workos-users-badge-suspended {
+                background: rgba(229, 72, 77, 0.08);
+                color: #E5484D;
+            }
+            .workos-resync-user.syncing {
+                opacity: 0.5;
+                pointer-events: none;
+            }
+        ');
+        wp_enqueue_style('workos-users-table');
+
+        $learning_mode = LearningMode::is_enabled();
+
+        wp_add_inline_script('jquery', '
+            jQuery(function($) {
+                $(document).on("click", ".workos-resync-user", function(e) {
+                    e.preventDefault();
+                    var $link = $(this);
+                    if ($link.hasClass("syncing")) return;
+
+                    var userId = $link.data("user-id");
+                    var nonce = $link.data("nonce");
+                    var $row = $link.closest("tr");
+                    var $badge = $row.find(".workos-users-badge");
+                    var originalText = $link.text();
+                    var learningMode = ' . ($learning_mode ? 'true' : 'false') . ';
+
+                    if (!learningMode) {
+                        if (!confirm("' . esc_js(__('This will verify the user against WorkOS. If they are not found or have no active organization membership, they will be suspended (locked out). Continue?', 'workos-for-wordpress')) . '")) {
+                            return;
+                        }
+                    }
+
+                    $link.addClass("syncing").text("' . esc_js(__('Syncing...', 'workos-for-wordpress')) . '");
+
+                    $.post(ajaxurl, {
+                        action: "workos_resync_user",
+                        user_id: userId,
+                        _ajax_nonce: nonce
+                    }, function(response) {
+                        if (response.success) {
+                            if (response.data.action === "suspended") {
+                                $badge.attr("class", "workos-users-badge workos-users-badge-suspended").text("' . esc_js(__('Suspended', 'workos-for-wordpress')) . '");
+                                $row.css("background", "rgba(229, 72, 77, 0.06)");
+                                $link.removeClass("syncing").text(originalText);
+                            } else {
+                                $badge.attr("class", "workos-users-badge workos-users-badge-synced").text("' . esc_js(__('Synced', 'workos-for-wordpress')) . '");
+                                $link.text("' . esc_js(__('Done!', 'workos-for-wordpress')) . '");
+                                setTimeout(function() {
+                                    $link.removeClass("syncing").text(originalText);
+                                }, 2000);
+                            }
+                        } else {
+                            $link.removeClass("syncing").text(originalText);
+                            alert(response.data && response.data.message ? response.data.message : "' . esc_js(__('Sync failed.', 'workos-for-wordpress')) . '");
+                        }
+                    }).fail(function() {
+                        $link.removeClass("syncing").text(originalText);
+                        alert("' . esc_js(__('Sync request failed.', 'workos-for-wordpress')) . '");
+                    });
+                });
+            });
+        ');
     }
 
     public function render_diagnostics_page(): void {

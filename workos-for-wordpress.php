@@ -3,11 +3,11 @@
  * Plugin Name: WorkOS for WordPress
  * Plugin URI:  https://github.com/AlwaysCuriousCo/workos-for-wordpress
  * Description: Integrate WorkOS authentication and user management into WordPress.
- * Version:     0.1.0
+ * Version:     1.0.0
  * Author:      Always Curious
  * Author URI:  https://alwayscurious.co
- * License:     GPL-2.0-or-later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * License:     GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: workos-for-wordpress
  * Requires PHP: 8.1
  * Requires at least: 6.4
@@ -15,7 +15,7 @@
 
 defined('ABSPATH') || exit;
 
-define('WORKOS_WP_VERSION', '0.1.0');
+define('WORKOS_WP_VERSION', '1.0.0');
 define('WORKOS_WP_PLUGIN_FILE', __FILE__);
 define('WORKOS_WP_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('WORKOS_WP_PLUGIN_URL', plugin_dir_url(__FILE__));
