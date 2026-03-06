@@ -1,10 +1,10 @@
+![WorkOS for WordPress](screenshots/banner.png)
+
 # WorkOS for WordPress
 
 **Enterprise-grade authentication and user management for WordPress, powered by [WorkOS](https://workos.com).**
 
 Replace the default WordPress login with WorkOS AuthKit and unlock SSO, SAML, OIDC, social login, MFA, and centralized user management — all without writing a single line of code.
-
-![AuthKit Login](screenshots/08-authkit-login.png)
 
 ---
 

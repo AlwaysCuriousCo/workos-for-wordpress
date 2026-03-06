@@ -96,6 +96,11 @@ class Plugin {
 
         // Plugin row meta: sponsor link.
         add_filter('plugin_action_links_' . plugin_basename(WORKOS_WP_PLUGIN_FILE), [$this, 'plugin_action_links']);
+
+        // Admin bar WorkOS status indicator.
+        add_action('admin_bar_menu', [$this, 'admin_bar_workos_node'], 100);
+        add_action('wp_head', [$this, 'admin_bar_inline_styles']);
+        add_action('admin_head', [$this, 'admin_bar_inline_styles']);
     }
 
     /**
@@ -113,6 +118,124 @@ class Plugin {
             __('Sponsor', 'workos-for-wordpress')
         );
         return $links;
+    }
+
+    /**
+     * Add a WorkOS status node to the WordPress admin bar.
+     */
+    public function admin_bar_workos_node(\WP_Admin_Bar $admin_bar): void {
+        if (!is_user_logged_in() || !is_admin_bar_showing()) {
+            return;
+        }
+
+        $user_id = get_current_user_id();
+        $workos_user_id = get_user_meta($user_id, '_workos_user_id', true);
+        $synced_at = get_user_meta($user_id, '_workos_synced_at', true);
+        $org_id = get_user_meta($user_id, '_workos_organization_id', true);
+        $is_workos_session = !empty($workos_user_id);
+
+        // Determine status.
+        if (!empty(get_user_meta($user_id, '_workos_suspended', true))) {
+            $status = 'suspended';
+            $status_label = __('Suspended', 'workos-for-wordpress');
+            $dot_color = '#E5484D';
+        } elseif (!empty($synced_at)) {
+            $status = 'synced';
+            $status_label = __('Synced', 'workos-for-wordpress');
+            $dot_color = '#30A46C';
+        } elseif ($is_workos_session) {
+            $status = 'linked';
+            $status_label = __('Linked', 'workos-for-wordpress');
+            $dot_color = '#6C47FF';
+        } else {
+            $status = 'none';
+            $status_label = __('Not connected', 'workos-for-wordpress');
+            $dot_color = '#8B8D98';
+        }
+
+        $icon_svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 242 210" style="width:16px;height:14px;vertical-align:middle;margin-right:4px;position:relative;top:-1px;">'
+            . '<path fill="currentColor" d="M1,105c0,4.56,1.2,9.12,3.52,13.04l42.08,72.88c4.32,7.44,10.88,13.52,19.04,16.24,16.08,5.36,32.72-1.52,40.64-15.28l10.16-17.6-40.08-69.28L118.68,31.64l10.16-17.6c3.04-5.28,7.12-9.6,11.92-13.04h-65.28c-11.44,0-22,6.08-27.68,16L4.52,91.96c-2.32,3.92-3.52,8.48-3.52,13.04Z"/>'
+            . '<path fill="currentColor" d="M241,105c0-4.56-1.2-9.12-3.52-13.04l-42.64-73.84c-7.92-13.68-24.56-20.56-40.64-15.28-8.16,2.72-14.72,8.8-19.04,16.24l-9.6,16.56,40.08,69.36-42.32,73.36-10.16,17.6c-3.04,5.2-7.12,9.6-11.92,13.04h65.28c11.44,0,22-6.08,27.68-16l43.28-74.96c2.32-3.92,3.52-8.48,3.52-13.04Z"/>'
+            . '</svg>';
+
+        // Top-level node.
+        $admin_bar->add_node([
+            'id'    => 'workos',
+            'title' => $icon_svg . '<span class="workos-ab-dot" style="background:' . esc_attr($dot_color) . ';"></span>',
+            'href'  => current_user_can('manage_options') ? admin_url('admin.php?page=workos-settings') : false,
+            'meta'  => [
+                'title' => sprintf(__('WorkOS: %s', 'workos-for-wordpress'), $status_label),
+            ],
+        ]);
+
+        // Sub-item: status.
+        $admin_bar->add_node([
+            'id'     => 'workos-status',
+            'parent' => 'workos',
+            'title'  => sprintf(__('Status: %s', 'workos-for-wordpress'), $status_label),
+        ]);
+
+        // Sub-item: WorkOS user ID if linked.
+        if ($is_workos_session) {
+            $admin_bar->add_node([
+                'id'     => 'workos-user-id',
+                'parent' => 'workos',
+                'title'  => sprintf(__('User: %s', 'workos-for-wordpress'), substr($workos_user_id, 0, 20) . '…'),
+                'meta'   => ['title' => $workos_user_id],
+            ]);
+        }
+
+        // Sub-item: org ID if set.
+        if (!empty($org_id)) {
+            $admin_bar->add_node([
+                'id'     => 'workos-org',
+                'parent' => 'workos',
+                'title'  => sprintf(__('Org: %s', 'workos-for-wordpress'), substr($org_id, 0, 20) . '…'),
+                'meta'   => ['title' => $org_id],
+            ]);
+        }
+
+        // Sub-item: link to settings (admins only).
+        if (current_user_can('manage_options')) {
+            $admin_bar->add_node([
+                'id'     => 'workos-settings-link',
+                'parent' => 'workos',
+                'title'  => __('Settings', 'workos-for-wordpress'),
+                'href'   => admin_url('admin.php?page=workos-settings'),
+            ]);
+
+            $admin_bar->add_node([
+                'id'     => 'workos-dashboard-link',
+                'parent' => 'workos',
+                'title'  => __('WorkOS Dashboard', 'workos-for-wordpress'),
+                'href'   => 'https://dashboard.workos.com',
+                'meta'   => ['target' => '_blank', 'rel' => 'noopener'],
+            ]);
+        }
+    }
+
+    /**
+     * Inline CSS for the admin bar WorkOS node.
+     */
+    public function admin_bar_inline_styles(): void {
+        if (!is_user_logged_in() || !is_admin_bar_showing()) {
+            return;
+        }
+        ?>
+        <style>
+            #wpadminbar #wp-admin-bar-workos > .ab-item {
+                display: flex;
+                align-items: center;
+            }
+            .workos-ab-dot {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                margin-left: 2px;
+            }
+        </style>
+        <?php
     }
 
     /**
