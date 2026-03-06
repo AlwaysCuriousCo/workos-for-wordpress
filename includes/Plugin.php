@@ -421,6 +421,17 @@ class Plugin {
             'default'           => [],
         ]);
 
+        // Registration & default role (mirrors core WordPress options).
+        register_setting('workos_role_settings', 'users_can_register', [
+            'type'              => 'boolean',
+            'sanitize_callback' => 'absint',
+        ]);
+
+        register_setting('workos_role_settings', 'default_role', [
+            'type'              => 'string',
+            'sanitize_callback' => 'sanitize_text_field',
+        ]);
+
         // --- Learning Mode ---
         register_setting('workos_learning_mode_settings', 'workos_learning_mode', [
             'type'              => 'boolean',
@@ -761,6 +772,33 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                         ?>
                     </div>
                 <?php endif; ?>
+
+                <div class="workos-card">
+                    <div class="workos-card-header">
+                        <h2><?php esc_html_e('Registration', 'workos-for-wordpress'); ?></h2>
+                        <p><?php esc_html_e('Control whether new users can register through AuthKit. This mirrors the WordPress "Anyone can register" setting.', 'workos-for-wordpress'); ?></p>
+                    </div>
+
+                    <div class="workos-field">
+                        <label>
+                            <input type="checkbox" name="users_can_register" value="1" <?php checked(get_option('users_can_register')); ?> />
+                            <?php esc_html_e('Allow user registration', 'workos-for-wordpress'); ?>
+                        </label>
+                        <p class="workos-field-description"><?php esc_html_e('When disabled, only existing WordPress users can log in via AuthKit. The sign-up option will be hidden.', 'workos-for-wordpress'); ?></p>
+                    </div>
+
+                    <?php if (get_option('users_can_register')): ?>
+                    <div class="workos-field">
+                        <label for="workos_default_role"><?php esc_html_e('Default Role for New Users', 'workos-for-wordpress'); ?></label>
+                        <select id="workos_default_role" name="default_role">
+                            <?php foreach ($wp_roles as $role_slug => $role_name): ?>
+                                <option value="<?php echo esc_attr($role_slug); ?>" <?php selected(get_option('default_role'), $role_slug); ?>><?php echo esc_html(translate_user_role($role_name)); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="workos-field-description"><?php esc_html_e('Role assigned to new users who register via AuthKit and have no WorkOS role mapping. This is the same setting as Settings → General → New User Default Role.', 'workos-for-wordpress'); ?></p>
+                    </div>
+                    <?php endif; ?>
+                </div>
 
                 <div class="workos-card">
                     <div class="workos-card-header">

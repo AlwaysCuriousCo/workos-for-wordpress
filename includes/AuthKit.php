@@ -43,12 +43,18 @@ class AuthKit {
         $redirect_to = $_GET['redirect_to'] ?? admin_url();
         $org_id = get_option('workos_organization_id');
 
+        // If WordPress registration is disabled, restrict AuthKit to sign-in only.
+        $screen_hint = get_option('users_can_register') ? null : 'sign-in';
+
         $authorization_url = $this->user_management->getAuthorizationUrl(
             self::get_callback_url(),
             ['redirect_to' => $redirect_to],
             \WorkOS\UserManagement::AUTHORIZATION_PROVIDER_AUTHKIT,
             null,
-            $org_id ?: null
+            $org_id ?: null,
+            null,
+            null,
+            $screen_hint
         );
 
         wp_redirect($authorization_url);
@@ -252,6 +258,14 @@ class AuthKit {
         if ($wp_user) {
             $this->update_user_profile($wp_user->ID, $workos_user);
             return $wp_user;
+        }
+
+        // Block registration if WordPress doesn't allow it.
+        if (!get_option('users_can_register')) {
+            return new \WP_Error(
+                'registration_disabled',
+                __('Registration is not allowed. Contact your administrator for access.', 'workos-for-wordpress')
+            );
         }
 
         // Create a new user.
