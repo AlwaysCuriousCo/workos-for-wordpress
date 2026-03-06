@@ -301,6 +301,30 @@ class Plugin {
             [],
             filemtime(WORKOS_WP_PLUGIN_DIR . 'assets/css/admin.css')
         );
+
+        wp_add_inline_style('workos-admin', '
+            .workos-click-to-copy { cursor: pointer; position: relative; transition: background-color 0.2s; }
+            .workos-click-to-copy:hover { background-color: rgba(0,0,0,0.04); }
+            .workos-click-to-copy.workos-copied { background-color: rgba(16,185,129,0.08); }
+        ');
+
+        wp_add_inline_script('jquery', '
+            jQuery(function($) {
+                $(document).on("click", ".workos-click-to-copy", function() {
+                    var el = $(this);
+                    var text = el.data("copy") || el.text();
+                    navigator.clipboard.writeText(text).then(function() {
+                        el.addClass("workos-copied");
+                        var orig = el.attr("title");
+                        el.attr("title", "' . esc_js(__('Copied!', 'workos-for-wordpress')) . '");
+                        setTimeout(function() {
+                            el.removeClass("workos-copied");
+                            el.attr("title", orig);
+                        }, 1500);
+                    });
+                });
+            });
+        ');
     }
 
     public function register_settings_page(): void {
@@ -600,7 +624,7 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                         <h2><?php esc_html_e('Redirect URI', 'workos-for-wordpress'); ?></h2>
                         <p><?php esc_html_e('Add this URL as a Redirect URI in your WorkOS Dashboard under Redirects.', 'workos-for-wordpress'); ?></p>
                     </div>
-                    <div class="workos-code"><?php echo esc_html($redirect_uri); ?></div>
+                    <div class="workos-code workos-click-to-copy" title="<?php esc_attr_e('Click to copy', 'workos-for-wordpress'); ?>" data-copy="<?php echo esc_attr($redirect_uri); ?>"><?php echo esc_html($redirect_uri); ?></div>
                 </div>
 
                 <?php if (!$all_locked): ?>
@@ -2009,7 +2033,7 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                     </tr>
                     <tr>
                         <td class="workos-table-label"><?php esc_html_e('Redirect URI', 'workos-for-wordpress'); ?></td>
-                        <td><span class="workos-diag-value"><?php echo esc_html(AuthKit::get_callback_url()); ?></span></td>
+                        <td><span class="workos-diag-value workos-click-to-copy" title="<?php esc_attr_e('Click to copy', 'workos-for-wordpress'); ?>" data-copy="<?php echo esc_attr(AuthKit::get_callback_url()); ?>"><?php echo esc_html(AuthKit::get_callback_url()); ?></span></td>
                     </tr>
                     <?php if ($auth_url): ?>
                     <tr>
