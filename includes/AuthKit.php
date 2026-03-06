@@ -106,6 +106,9 @@ class AuthKit {
                 update_user_meta($wp_user->ID, '_workos_organization_id', $response->organizationId);
             }
 
+            // Sync WordPress role from WorkOS organization membership.
+            $this->sync_user_role($wp_user, $workos_user->id, $response->organizationId ?? null);
+
             // Extract and store the session ID from the access token for logout.
             $session_id = $this->extract_session_id($response->accessToken);
             if ($session_id) {
@@ -267,6 +270,47 @@ class AuthKit {
     private function is_callback_request(): bool {
         $path = trim(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH), '/');
         return $path === 'workos/callback';
+    }
+
+    /**
+     * Fetch the user's WorkOS organization membership and sync their WordPress role.
+     */
+    private function sync_user_role(\WP_User $wp_user, string $workos_user_id, ?string $org_id): void {
+        if (empty($org_id)) {
+            $org_id = get_option('workos_organization_id');
+        }
+        if (empty($org_id)) {
+            return;
+        }
+
+        try {
+            [$before, $after, $memberships] = $this->user_management->listOrganizationMemberships(
+                userId: $workos_user_id,
+                organizationId: $org_id,
+                statuses: ['active'],
+                limit: 1
+            );
+
+            if (empty($memberships)) {
+                return;
+            }
+
+            $membership = $memberships[0];
+            $workos_role_slug = $membership->role->slug ?? null;
+
+            if (!$workos_role_slug) {
+                return;
+            }
+
+            $wp_role = Plugin::get_wp_role_for_workos_role($workos_role_slug);
+            if ($wp_role && !in_array($wp_role, $wp_user->roles, true)) {
+                $wp_user->set_role($wp_role);
+            }
+
+            update_user_meta($wp_user->ID, '_workos_role_slug', $workos_role_slug);
+        } catch (\Exception $e) {
+            // Role sync is best-effort — don't block login on failure.
+        }
     }
 
     /**

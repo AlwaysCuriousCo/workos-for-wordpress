@@ -1,0 +1,593 @@
+/*
+ * WorkOS for WordPress — Admin UI
+ * Radix-inspired design system matching AuthKit hosted UI.
+ */
+
+/* ----------------------------------------------------------------
+   Reset & Foundation
+   ---------------------------------------------------------------- */
+.workos-admin {
+    --wos-font: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --wos-color-primary: #6C47FF;
+    --wos-color-primary-hover: #5A37E6;
+    --wos-color-primary-soft: rgba(108, 71, 255, 0.08);
+    --wos-color-danger: #E5484D;
+    --wos-color-danger-soft: rgba(229, 72, 77, 0.08);
+    --wos-color-success: #30A46C;
+    --wos-color-success-soft: rgba(48, 164, 108, 0.08);
+    --wos-color-warning: #F5A623;
+    --wos-color-warning-soft: rgba(245, 166, 35, 0.08);
+    --wos-text-primary: #1C2024;
+    --wos-text-secondary: #60646C;
+    --wos-text-tertiary: #8B8D98;
+    --wos-bg-page: #F9F9FB;
+    --wos-bg-card: #FFFFFF;
+    --wos-border: #E0E1E6;
+    --wos-border-input: #D0D5DD;
+    --wos-border-focus: #6C47FF;
+    --wos-radius-sm: 6px;
+    --wos-radius-md: 8px;
+    --wos-radius-lg: 12px;
+    --wos-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+    --wos-shadow-card-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --wos-transition: 120ms ease;
+
+    font-family: var(--wos-font);
+    color: var(--wos-text-primary);
+    max-width: 880px;
+}
+
+.workos-admin *,
+.workos-admin *::before,
+.workos-admin *::after {
+    box-sizing: border-box;
+}
+
+/* ----------------------------------------------------------------
+   Global Header (logo + nav)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-global-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--wos-border);
+}
+
+.workos-admin .workos-global-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.workos-admin .workos-global-header-logo img {
+    display: block;
+    height: 28px;
+    width: auto;
+}
+
+.workos-admin .workos-global-header-separator {
+    width: 1px;
+    height: 24px;
+    background: var(--wos-border);
+}
+
+.workos-admin .workos-global-header-nav {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.workos-admin .workos-global-header-nav a {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wos-text-secondary);
+    text-decoration: none;
+    border-radius: var(--wos-radius-sm);
+    transition: background var(--wos-transition), color var(--wos-transition);
+}
+
+.workos-admin .workos-global-header-nav a:hover {
+    background: var(--wos-bg-page);
+    color: var(--wos-text-primary);
+}
+
+.workos-admin .workos-global-header-nav a.workos-nav-active {
+    background: var(--wos-color-primary-soft);
+    color: var(--wos-color-primary);
+}
+
+.workos-admin .workos-global-header-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.workos-admin .workos-global-header-links a {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 32px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--wos-text-tertiary);
+    text-decoration: none;
+    border-radius: var(--wos-radius-sm);
+    transition: background var(--wos-transition), color var(--wos-transition);
+}
+
+.workos-admin .workos-global-header-links a:hover {
+    background: var(--wos-bg-page);
+    color: var(--wos-text-primary);
+}
+
+.workos-admin .workos-global-header-links a svg {
+    flex-shrink: 0;
+}
+
+/* ----------------------------------------------------------------
+   Welcome Hero
+   ---------------------------------------------------------------- */
+.workos-admin .workos-welcome-hero {
+    background: linear-gradient(135deg, #1C2024 0%, #2D1B69 50%, #6C47FF 100%);
+    border-radius: var(--wos-radius-lg);
+    padding: 36px 32px;
+    margin-bottom: 28px;
+    color: #FFFFFF;
+}
+
+.workos-admin .workos-welcome-hero-content h1 {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin: 0 0 10px;
+    padding: 0;
+    color: #FFFFFF;
+    line-height: 1.2;
+}
+
+.workos-admin .workos-welcome-hero-content > p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 24px;
+    max-width: 640px;
+}
+
+.workos-admin .workos-welcome-features {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.workos-admin .workos-welcome-feature {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.workos-admin .workos-welcome-feature-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--wos-radius-md);
+    background: rgba(255, 255, 255, 0.12);
+    color: #FFFFFF;
+}
+
+.workos-admin .workos-welcome-feature div strong {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #FFFFFF;
+    margin-bottom: 2px;
+}
+
+.workos-admin .workos-welcome-feature div span {
+    font-size: 13px;
+    line-height: 1.5;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ----------------------------------------------------------------
+   Page Header (title + description)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-page-header {
+    margin-bottom: 24px;
+}
+
+.workos-admin .workos-page-header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--wos-text-primary);
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+}
+
+.workos-admin .workos-page-header .workos-page-description {
+    font-size: 14px;
+    color: var(--wos-text-secondary);
+    margin: 6px 0 0;
+    line-height: 1.4;
+}
+
+/* ----------------------------------------------------------------
+   Cards
+   ---------------------------------------------------------------- */
+.workos-admin .workos-card {
+    background: var(--wos-bg-card);
+    border: 1px solid var(--wos-border);
+    border-radius: var(--wos-radius-lg);
+    box-shadow: var(--wos-shadow-card);
+    padding: 24px;
+    margin-bottom: 20px;
+}
+
+.workos-admin .workos-card-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--wos-border);
+}
+
+.workos-admin .workos-card-header h2 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wos-text-primary);
+    margin: 0;
+    padding: 0;
+    letter-spacing: -0.01em;
+}
+
+.workos-admin .workos-card-header p {
+    font-size: 13px;
+    color: var(--wos-text-secondary);
+    margin: 4px 0 0;
+    line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------
+   Form Fields
+   ---------------------------------------------------------------- */
+.workos-admin .workos-field {
+    margin-bottom: 20px;
+}
+
+.workos-admin .workos-field:last-child {
+    margin-bottom: 0;
+}
+
+.workos-admin .workos-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wos-text-primary);
+    margin-bottom: 6px;
+    letter-spacing: 0;
+}
+
+.workos-admin .workos-field .workos-field-description {
+    font-size: 12px;
+    color: var(--wos-text-tertiary);
+    margin-top: 6px;
+    line-height: 1.5;
+}
+
+.workos-admin .workos-field input[type="text"],
+.workos-admin .workos-field input[type="password"] {
+    width: 100%;
+    max-width: 100%;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-family: var(--wos-font);
+    color: var(--wos-text-primary);
+    background: var(--wos-bg-card);
+    border: 1px solid var(--wos-border-input);
+    border-radius: var(--wos-radius-sm);
+    transition: border-color var(--wos-transition), box-shadow var(--wos-transition);
+    outline: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.workos-admin .workos-field input[type="text"]:focus,
+.workos-admin .workos-field input[type="password"]:focus {
+    border-color: var(--wos-border-focus);
+    box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+.workos-admin .workos-field input[type="text"]::placeholder,
+.workos-admin .workos-field input[type="password"]::placeholder {
+    color: var(--wos-text-tertiary);
+}
+
+.workos-admin .workos-field select {
+    height: 36px;
+    padding: 0 32px 0 12px;
+    font-size: 13px;
+    font-family: var(--wos-font);
+    color: var(--wos-text-primary);
+    background: var(--wos-bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2360646C' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 12px;
+    border: 1px solid var(--wos-border-input);
+    border-radius: var(--wos-radius-sm);
+    transition: border-color var(--wos-transition), box-shadow var(--wos-transition);
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.workos-admin .workos-field select:focus {
+    border-color: var(--wos-border-focus);
+    box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+/* Code / read-only values */
+.workos-admin .workos-code {
+    display: inline-block;
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 12px;
+    color: var(--wos-text-primary);
+    background: var(--wos-bg-page);
+    border: 1px solid var(--wos-border);
+    border-radius: var(--wos-radius-sm);
+    padding: 6px 12px;
+    word-break: break-all;
+    line-height: 1.5;
+}
+
+/* ----------------------------------------------------------------
+   Buttons
+   ---------------------------------------------------------------- */
+.workos-admin .workos-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--wos-font);
+    border-radius: var(--wos-radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all var(--wos-transition);
+    outline: none;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.workos-admin .workos-btn-primary {
+    background: var(--wos-color-primary);
+    color: #FFFFFF;
+    border-color: var(--wos-color-primary);
+}
+
+.workos-admin .workos-btn-primary:hover {
+    background: var(--wos-color-primary-hover);
+    border-color: var(--wos-color-primary-hover);
+}
+
+.workos-admin .workos-btn-primary:focus-visible {
+    box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+.workos-admin .workos-btn-secondary {
+    background: var(--wos-bg-card);
+    color: var(--wos-text-primary);
+    border-color: var(--wos-border-input);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.workos-admin .workos-btn-secondary:hover {
+    background: var(--wos-bg-page);
+    border-color: var(--wos-border);
+}
+
+.workos-admin .workos-btn-danger {
+    background: var(--wos-bg-card);
+    color: var(--wos-color-danger);
+    border-color: var(--wos-border-input);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.workos-admin .workos-btn-danger:hover {
+    background: var(--wos-color-danger-soft);
+    border-color: var(--wos-color-danger);
+}
+
+.workos-admin .workos-btn-sm {
+    height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+}
+
+/* ----------------------------------------------------------------
+   Alerts / Notices
+   ---------------------------------------------------------------- */
+.workos-admin .workos-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: var(--wos-radius-md);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 20px;
+    border: 1px solid;
+}
+
+.workos-admin .workos-alert-warning {
+    background: var(--wos-color-warning-soft);
+    border-color: rgba(245, 166, 35, 0.2);
+    color: #93600A;
+}
+
+.workos-admin .workos-alert-error {
+    background: var(--wos-color-danger-soft);
+    border-color: rgba(229, 72, 77, 0.2);
+    color: #CA2D31;
+}
+
+.workos-admin .workos-alert-success {
+    background: var(--wos-color-success-soft);
+    border-color: rgba(48, 164, 108, 0.2);
+    color: #1D6D46;
+}
+
+.workos-admin .workos-alert-info {
+    background: var(--wos-color-primary-soft);
+    border-color: rgba(108, 71, 255, 0.15);
+    color: #4A31B0;
+}
+
+/* ----------------------------------------------------------------
+   Tables (Diagnostics & Role Mapping)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+    border: 1px solid var(--wos-border);
+    border-radius: var(--wos-radius-md);
+    overflow: hidden;
+}
+
+.workos-admin .workos-table thead th {
+    background: var(--wos-bg-page);
+    font-weight: 500;
+    font-size: 12px;
+    color: var(--wos-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--wos-border);
+}
+
+.workos-admin .workos-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--wos-border);
+    vertical-align: middle;
+    color: var(--wos-text-primary);
+}
+
+.workos-admin .workos-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.workos-admin .workos-table tbody tr:hover {
+    background: var(--wos-bg-page);
+}
+
+.workos-admin .workos-table td.workos-table-label {
+    font-weight: 500;
+    color: var(--wos-text-secondary);
+    white-space: nowrap;
+    width: 160px;
+}
+
+/* Role mapping table selects */
+.workos-admin .workos-table select {
+    width: 100%;
+    height: 32px;
+    padding: 0 28px 0 10px;
+    font-size: 13px;
+    font-family: var(--wos-font);
+    color: var(--wos-text-primary);
+    background: var(--wos-bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2360646C' d='M2.5 4.5L6 8l3.5-3.5'/%3E%3C/svg%3E") no-repeat right 8px center;
+    background-size: 12px;
+    border: 1px solid var(--wos-border-input);
+    border-radius: var(--wos-radius-sm);
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: border-color var(--wos-transition), box-shadow var(--wos-transition);
+}
+
+.workos-admin .workos-table select:focus {
+    border-color: var(--wos-border-focus);
+    box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+.workos-admin .workos-table .workos-table-actions {
+    width: 44px;
+    text-align: center;
+}
+
+/* ----------------------------------------------------------------
+   Diagnostics values
+   ---------------------------------------------------------------- */
+.workos-admin .workos-diag-value {
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+.workos-admin .workos-diag-error {
+    color: var(--wos-color-danger);
+}
+
+.workos-admin .workos-badge {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 8px;
+    font-size: 11px;
+    font-weight: 500;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+}
+
+.workos-admin .workos-badge-success {
+    background: var(--wos-color-success-soft);
+    color: var(--wos-color-success);
+}
+
+.workos-admin .workos-badge-warning {
+    background: var(--wos-color-warning-soft);
+    color: #93600A;
+}
+
+.workos-admin .workos-badge-muted {
+    background: var(--wos-bg-page);
+    color: var(--wos-text-tertiary);
+    border: 1px solid var(--wos-border);
+}
+
+/* ----------------------------------------------------------------
+   WordPress overrides (hide default chrome on our pages)
+   ---------------------------------------------------------------- */
+.workos-admin .notice:not(.workos-alert) {
+    display: none;
+}
+
+.workos-admin h2.title,
+.workos-admin .wp-heading-inline {
+    display: none;
+}
+
+/* Override WP settings API section headings */
+.workos-admin h2:not(.workos-card-header h2) {
+    display: none;
+}
+
+/* Override WP form-table */
+.workos-admin .form-table {
+    display: none;
+}
