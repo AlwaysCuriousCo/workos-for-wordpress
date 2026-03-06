@@ -30,23 +30,32 @@ WordPress powers millions of business-critical sites, but its built-in authentic
 
 ## Installation
 
-1. **Download or clone** the plugin into your WordPress plugins directory:
+### Download a Release (recommended)
+
+1. **Download the latest zip** from [GitHub Releases](https://github.com/AlwaysCuriousCo/workos-for-wordpress/releases). The zip includes all dependencies — no Composer required.
+2. In your WordPress admin, go to **Plugins > Add New > Upload Plugin** and upload the zip.
+3. **Activate** the plugin.
+4. **Configure your credentials** under the new **WorkOS** menu in the admin sidebar.
+
+### Install from Source
+
+If you prefer to clone the repository directly:
+
+1. Clone into your plugins directory:
 
    ```bash
    cd wp-content/plugins/
    git clone https://github.com/AlwaysCuriousCo/workos-for-wordpress.git
    ```
 
-2. **Install dependencies** via Composer:
+2. Install dependencies via Composer:
 
    ```bash
    cd workos-for-wordpress
    composer install
    ```
 
-3. **Activate the plugin** from the WordPress admin under Plugins.
-
-4. **Configure your credentials** under the new **WorkOS** menu in the admin sidebar.
+3. **Activate** the plugin and configure under **WorkOS** in the admin sidebar.
 
 ---
 

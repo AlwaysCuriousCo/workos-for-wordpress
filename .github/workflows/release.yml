@@ -89,7 +89,7 @@ jobs:
             ./ "$DEST/"
 
           cd "$BUILD_DIR"
-          zip -rq "$GITHUB_WORKSPACE/$PLUGIN_SLUG-$VERSION.zip" "$PLUGIN_SLUG"
+          zip -rq "$GITHUB_WORKSPACE/$PLUGIN_SLUG.zip" "$PLUGIN_SLUG"
 
       - name: Create tag and GitHub Release
         env:
@@ -99,6 +99,6 @@ jobs:
           git tag "v$VERSION"
           git push origin "v$VERSION"
           gh release create "v$VERSION" \
-            "workos-for-wordpress-$VERSION.zip" \
+            "workos-for-wordpress.zip" \
             --title "v$VERSION" \
             --generate-notes

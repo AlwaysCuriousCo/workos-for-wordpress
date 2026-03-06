@@ -6,7 +6,7 @@
 #   ./bin/build-zip.sh
 #
 # Output:
-#   dist/workos-for-wordpress-{version}.zip
+#   dist/workos-for-wordpress.zip
 
 set -euo pipefail
 
@@ -50,7 +50,7 @@ echo "Installed production dependencies."
 
 # Create dist directory and zip.
 mkdir -p "$DIST_DIR"
-ZIP_FILE="$DIST_DIR/$PLUGIN_SLUG-$VERSION.zip"
+ZIP_FILE="$DIST_DIR/$PLUGIN_SLUG.zip"
 cd "$BUILD_DIR"
 zip -rq "$ZIP_FILE" "$PLUGIN_SLUG"
 
