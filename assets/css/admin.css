@@ -249,11 +249,82 @@
     letter-spacing: -0.01em;
 }
 
+.workos-admin .workos-card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .workos-admin .workos-card-header p {
     font-size: 13px;
     color: var(--wos-text-secondary);
     margin: 4px 0 0;
     line-height: 1.5;
+}
+
+/* Tooltip toggle button */
+.workos-admin .workos-tooltip-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: var(--wos-radius-sm);
+    background: transparent;
+    color: var(--wos-text-tertiary);
+    cursor: pointer;
+    transition: background var(--wos-transition), color var(--wos-transition);
+}
+
+.workos-admin .workos-tooltip-toggle:hover,
+.workos-admin .workos-tooltip-toggle[aria-expanded="true"] {
+    background: var(--wos-color-primary-soft);
+    color: var(--wos-color-primary);
+}
+
+/* Tooltip content panel */
+.workos-admin .workos-tooltip-content {
+    margin-top: 12px;
+    padding: 14px 16px;
+    background: var(--wos-bg-page);
+    border: 1px solid var(--wos-border);
+    border-radius: var(--wos-radius-md);
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--wos-text-secondary);
+}
+
+.workos-admin .workos-tooltip-content p {
+    margin: 0 0 10px;
+    font-size: 13px;
+    color: var(--wos-text-secondary);
+}
+
+.workos-admin .workos-tooltip-content p:last-child {
+    margin-bottom: 0;
+}
+
+.workos-admin .workos-tooltip-content pre {
+    margin: 0 0 10px;
+    padding: 12px 14px;
+    background: #1C2024;
+    color: #E8E8ED;
+    border-radius: var(--wos-radius-sm);
+    font-family: "SF Mono", "Cascadia Code", "Fira Code", Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.workos-admin .workos-tooltip-content pre code {
+    background: none;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+    color: inherit;
 }
 
 /* ----------------------------------------------------------------
@@ -332,6 +403,30 @@
 .workos-admin .workos-field select:focus {
     border-color: var(--wos-border-focus);
     box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+/* Locked fields (constant-defined via wp-config.php) */
+.workos-admin .workos-field-locked input[type="text"],
+.workos-admin .workos-field-locked input[type="password"],
+.workos-admin .workos-field-locked select {
+    background: var(--wos-bg-page);
+    color: var(--wos-text-tertiary);
+    cursor: not-allowed;
+    border-style: dashed;
+}
+
+.workos-admin .workos-field-locked label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.workos-admin .workos-field-locked .workos-field-description code {
+    font-size: 12px;
+    background: var(--wos-bg-page);
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--wos-border);
 }
 
 /* Code / read-only values */
@@ -568,6 +663,158 @@
     background: var(--wos-bg-page);
     color: var(--wos-text-tertiary);
     border: 1px solid var(--wos-border);
+}
+
+.workos-admin .workos-badge-info {
+    background: var(--wos-color-primary-soft);
+    color: var(--wos-color-primary);
+}
+
+.workos-admin .workos-badge-danger {
+    background: var(--wos-color-danger-soft);
+    color: var(--wos-color-danger);
+}
+
+/* ----------------------------------------------------------------
+   Toggle Switch
+   ---------------------------------------------------------------- */
+.workos-admin .workos-toggle-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wos-text-primary);
+}
+
+.workos-admin .workos-toggle-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.workos-admin .workos-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 36px;
+    height: 20px;
+    background: var(--wos-border-input);
+    border-radius: 999px;
+    transition: background var(--wos-transition);
+    flex-shrink: 0;
+}
+
+.workos-admin .workos-toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: transform var(--wos-transition);
+}
+
+.workos-admin .workos-toggle-input:checked + .workos-toggle-switch {
+    background: var(--wos-color-primary);
+}
+
+.workos-admin .workos-toggle-input:checked + .workos-toggle-switch::after {
+    transform: translateX(16px);
+}
+
+.workos-admin .workos-toggle-input:focus-visible + .workos-toggle-switch {
+    box-shadow: 0 0 0 3px var(--wos-color-primary-soft);
+}
+
+/* ----------------------------------------------------------------
+   Stats Grid (Usage page)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.workos-admin .workos-stat-card {
+    background: var(--wos-bg-card);
+    border: 1px solid var(--wos-border);
+    border-radius: var(--wos-radius-lg);
+    box-shadow: var(--wos-shadow-card);
+    padding: 20px;
+    text-align: center;
+}
+
+.workos-admin .workos-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--wos-text-primary);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.workos-admin .workos-stat-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wos-text-secondary);
+}
+
+.workos-admin .workos-stat-period {
+    font-size: 11px;
+    color: var(--wos-text-tertiary);
+    margin-top: 4px;
+}
+
+/* ----------------------------------------------------------------
+   Danger Zone Card (Clear action)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-card-danger-zone {
+    border-color: rgba(229, 72, 77, 0.25);
+}
+
+.workos-admin .workos-card-danger-zone .workos-card-header {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.workos-admin .workos-card-danger-zone .workos-card-header-row {
+    align-items: center;
+    gap: 20px;
+}
+
+.workos-admin .workos-card-danger-zone h2 {
+    color: var(--wos-color-danger);
+}
+
+.workos-admin .workos-card-danger-zone p {
+    font-size: 13px;
+    color: var(--wos-text-secondary);
+}
+
+/* ----------------------------------------------------------------
+   Progress Bar (Learning Mode)
+   ---------------------------------------------------------------- */
+.workos-admin .workos-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--wos-bg-page);
+    border: 1px solid var(--wos-border);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.workos-admin .workos-progress-bar-fill {
+    height: 100%;
+    background: var(--wos-color-primary);
+    border-radius: 999px;
+    transition: width 300ms ease;
 }
 
 /* ----------------------------------------------------------------

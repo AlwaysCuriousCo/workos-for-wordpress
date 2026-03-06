@@ -88,6 +88,28 @@ class AuthKit {
             $response = $this->user_management->authenticateWithCode($client_id, $code);
 
             $workos_user = $response->user;
+
+            // Organization entitlement gate: deny login if user is not a member.
+            if ($this->is_entitlement_gate_active()) {
+                $org_id = $response->organizationId ?? get_option('workos_organization_id');
+                if (!$this->user_has_org_entitlement($workos_user->id, $org_id)) {
+                    ActivityLog::record('login_denied', [
+                        'user_email'     => $workos_user->email,
+                        'workos_user_id' => $workos_user->id,
+                        'metadata'       => [
+                            'reason'          => 'no_org_entitlement',
+                            'organization_id' => $org_id,
+                        ],
+                    ]);
+
+                    wp_die(
+                        esc_html__('Access denied. You are not entitled to this site. Contact your administrator to request access.', 'workos-for-wordpress'),
+                        __('Access Denied', 'workos-for-wordpress'),
+                        ['response' => 403]
+                    );
+                }
+            }
+
             $wp_user = $this->find_or_create_user($workos_user);
 
             if (is_wp_error($wp_user)) {
@@ -120,6 +142,17 @@ class AuthKit {
             wp_set_auth_cookie($wp_user->ID, true);
             do_action('wp_login', $wp_user->user_login, $wp_user);
 
+            // Record login event for activity tracking.
+            ActivityLog::record('login', [
+                'user_id'        => $wp_user->ID,
+                'user_email'     => $wp_user->user_email,
+                'workos_user_id' => $workos_user->id,
+                'metadata'       => [
+                    'organization_id' => $response->organizationId ?? null,
+                    'method'          => 'authkit',
+                ],
+            ]);
+
             // Redirect to the intended destination.
             $state = $this->decode_state($_GET['state'] ?? '');
             $redirect_to = $state['redirect_to'] ?? admin_url();
@@ -128,6 +161,10 @@ class AuthKit {
             exit;
 
         } catch (\Exception $e) {
+            ActivityLog::record('login_failed', [
+                'metadata' => ['error' => $e->getMessage()],
+            ]);
+
             wp_die(
                 esc_html(sprintf(
                     __('Authentication error: %s', 'workos-for-wordpress'),
@@ -150,6 +187,13 @@ class AuthKit {
         if (!$user_id) {
             return;
         }
+
+        $user = get_user_by('id', $user_id);
+        ActivityLog::record('logout', [
+            'user_id'        => $user_id,
+            'user_email'     => $user ? $user->user_email : null,
+            'workos_user_id' => get_user_meta($user_id, '_workos_user_id', true) ?: null,
+        ]);
 
         $session_id = get_user_meta($user_id, '_workos_session_id', true);
 
@@ -324,6 +368,36 @@ class AuthKit {
 
         $payload = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
         return $payload['sid'] ?? null;
+    }
+
+    /**
+     * Check if the organization entitlement gate is active.
+     */
+    private function is_entitlement_gate_active(): bool {
+        return (bool) get_option('workos_org_entitlement_gate', false)
+            && !empty(get_option('workos_organization_id'));
+    }
+
+    /**
+     * Check if a WorkOS user has an active membership in the configured organization.
+     */
+    private function user_has_org_entitlement(string $workos_user_id, ?string $org_id): bool {
+        if (empty($org_id)) {
+            return false;
+        }
+
+        try {
+            [$before, $after, $memberships] = $this->user_management->listOrganizationMemberships(
+                userId: $workos_user_id,
+                organizationId: $org_id,
+                statuses: ['active'],
+                limit: 1
+            );
+
+            return !empty($memberships);
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 
     /**
