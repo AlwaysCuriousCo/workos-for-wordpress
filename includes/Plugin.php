@@ -93,6 +93,26 @@ class Plugin {
         add_filter('user_row_actions', [$this, 'add_users_resync_action'], 10, 2);
         add_action('wp_ajax_workos_resync_user', [$this, 'handle_resync_user']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_users_table_assets']);
+
+        // Plugin row meta: sponsor link.
+        add_filter('plugin_action_links_' . plugin_basename(WORKOS_WP_PLUGIN_FILE), [$this, 'plugin_action_links']);
+    }
+
+    /**
+     * Add action links next to "Deactivate" on the Plugins list page.
+     */
+    public function plugin_action_links(array $links): array {
+        $links['settings'] = sprintf(
+            '<a href="%s">%s</a>',
+            admin_url('admin.php?page=workos-settings'),
+            __('Settings', 'workos-for-wordpress')
+        );
+        $links['sponsor'] = sprintf(
+            '<a href="%s" target="_blank" rel="noopener" style="color:#6C47FF;font-weight:500;">%s</a>',
+            'https://github.com/sponsors/AlwaysCuriousCo',
+            __('Sponsor', 'workos-for-wordpress')
+        );
+        return $links;
     }
 
     /**

@@ -4,6 +4,8 @@
 
 Replace the default WordPress login with WorkOS AuthKit and unlock SSO, SAML, OIDC, social login, MFA, and centralized user management — all without writing a single line of code.
 
+![AuthKit Login](screenshots/08-authkit-login.png)
+
 ---
 
 ## Why WorkOS for WordPress?
@@ -36,6 +38,8 @@ WordPress powers millions of business-critical sites, but its built-in authentic
 2. In your WordPress admin, go to **Plugins > Add New > Upload Plugin** and upload the zip.
 3. **Activate** the plugin.
 4. **Configure your credentials** under the new **WorkOS** menu in the admin sidebar.
+
+![Plugin Listing](screenshots/01-plugin-listing.png)
 
 ### Install from Source
 
@@ -74,6 +78,8 @@ If you prefer to clone the repository directly:
 
 That's it — your WordPress login page now redirects through WorkOS AuthKit.
 
+![Welcome & Settings](screenshots/02-welcome-settings.png)
+
 ### Environment-Based Configuration
 
 For managed deployments, staging environments, or version-controlled infrastructure, you can define credentials as constants in `wp-config.php` instead of storing them in the database:
@@ -99,6 +105,8 @@ When the plugin is configured, the WordPress login page (`wp-login.php`) automat
 - **Session management** — WorkOS session IDs are tracked so logout properly revokes both the WordPress session and the AuthKit hosted session.
 - **Bypass mode** — Append `?workos_bypass` to `wp-login.php` to access the native WordPress login form (useful for emergency access).
 
+![AuthKit Login Experience](screenshots/08-authkit-login.png)
+
 ### Organization & Role Mapping
 
 Bind your WordPress site to a WorkOS organization and map WorkOS roles to WordPress roles.
@@ -108,6 +116,8 @@ Bind your WordPress site to a WorkOS organization and map WorkOS roles to WordPr
 3. Add role mappings — for example, map the WorkOS `admin` role to the WordPress `administrator` role, and `member` to `editor`.
 
 On each login, the plugin fetches the user's organization membership from WorkOS and sets their WordPress role accordingly. Users without a mapped role keep their current role.
+
+![Organization & Role Mapping](screenshots/03-organization-roles.png)
 
 ### Organization Entitlement Gate
 
@@ -141,6 +151,8 @@ The sync runs sequentially with a built-in delay between API calls to respect ra
 - **Enable the Entitlement Gate** after syncing to enforce organization-based access going forward.
 - **Disable Learning Mode** once all users are imported — it is an onboarding tool, not a permanent setting.
 
+![Learning Mode](screenshots/05-learning-mode.png)
+
 ### Users Table Integration
 
 The plugin enhances the standard WordPress **Users** table (`wp-admin/users.php`) with:
@@ -154,6 +166,8 @@ The plugin enhances the standard WordPress **Users** table (`wp-admin/users.php`
 - **reSync action** — Appears in each user's row actions (visible to administrators):
   - **Learning Mode ON** → "reSync to WorkOS" — Pushes the user's data to WorkOS and ensures organization membership.
   - **Learning Mode OFF** → "reSync from WorkOS" — Verifies the user exists in WorkOS with an active organization membership. If they don't, the user is **suspended** (all WordPress roles are removed, preventing login). Their account and content are preserved.
+
+![Users Table with WorkOS Status](screenshots/07-users-table.png)
 
 ### Activity Tracking
 
@@ -179,6 +193,8 @@ The **Usage** page displays:
 - A table of the 20 most recent events with user email, IP address, and timestamp
 - A button to clear all logged events
 
+![Usage & Activity Tracking](screenshots/04-usage-tracking.png)
+
 ### Diagnostics
 
 The **Diagnostics** page verifies your WorkOS configuration:
@@ -186,6 +202,8 @@ The **Diagnostics** page verifies your WorkOS configuration:
 - Tests connectivity to the WorkOS API by generating an authorization URL.
 - Displays your Client ID, API Key (last 4 characters only), Organization ID, Redirect URI, and generated Auth URL.
 - Indicates whether each value is sourced from the database or a `wp-config.php` constant.
+
+![Diagnostics](screenshots/06-diagnostics.png)
 
 ---
 
@@ -291,6 +309,16 @@ No. Existing users are matched by email on first AuthKit login. Use Learning Mod
 
 **What happens to suspended users' content?**
 Suspended users retain their account, posts, and content. Only their WordPress roles are removed, which prevents login. Re-enable their access by re-syncing with Learning Mode enabled or by manually assigning a role.
+
+---
+
+## Support the Plugin
+
+WorkOS for WordPress is free and open source. If it saves you time or helps your business, consider sponsoring its continued development:
+
+**[Sponsor on GitHub](https://github.com/sponsors/AlwaysCuriousCo)**
+
+Sponsorships help fund new features, ongoing maintenance, and community support. Every contribution — big or small — makes a difference.
 
 ---
 
