@@ -191,8 +191,8 @@ class Plugin {
 
         add_submenu_page(
             'workos-settings',
-            __('Organization & Roles', 'workos-for-wordpress'),
-            __('Organization & Roles', 'workos-for-wordpress'),
+            __('Roles', 'workos-for-wordpress'),
+            __('Roles', 'workos-for-wordpress'),
             'manage_options',
             'workos-role-mapping',
             [$this, 'render_role_mapping_page']
@@ -286,7 +286,7 @@ class Plugin {
 
         $tabs = [
             'workos-settings'      => __('Welcome', 'workos-for-wordpress'),
-            'workos-role-mapping'  => __('Organization & Roles', 'workos-for-wordpress'),
+            'workos-role-mapping'  => __('Roles', 'workos-for-wordpress'),
             'workos-learning-mode' => __('Learning Mode', 'workos-for-wordpress'),
             'workos-usage'         => __('Usage', 'workos-for-wordpress'),
             'workos-diagnostics'   => __('Diagnostics', 'workos-for-wordpress'),
@@ -509,7 +509,7 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
             <?php $this->render_global_header('workos-role-mapping'); ?>
 
             <div class="workos-page-header">
-                <h1><?php esc_html_e('Organization & Roles', 'workos-for-wordpress'); ?></h1>
+                <h1><?php esc_html_e('Roles', 'workos-for-wordpress'); ?></h1>
                 <p class="workos-page-description"><?php esc_html_e('Select which WorkOS organization this site belongs to and map its roles to WordPress roles.', 'workos-for-wordpress'); ?></p>
             </div>
 
@@ -903,7 +903,7 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
 
             <?php if (!$configured): ?>
                 <div class="workos-alert workos-alert-warning">
-                    <?php esc_html_e('API credentials and an organization must be configured before Learning Mode can be used. Configure them on the Welcome and Organization & Roles pages.', 'workos-for-wordpress'); ?>
+                    <?php esc_html_e('API credentials and an organization must be configured before Learning Mode can be used. Configure them on the Welcome and Roles pages.', 'workos-for-wordpress'); ?>
                 </div>
             <?php endif; ?>
 
@@ -921,7 +921,7 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                         <p><strong><?php esc_html_e('Import Best Practices', 'workos-for-wordpress'); ?></strong></p>
                         <p><strong><?php esc_html_e('Before importing:', 'workos-for-wordpress'); ?></strong></p>
                         <p><?php esc_html_e('1. Audit your WordPress users — remove inactive or spam accounts first to avoid syncing unnecessary users.', 'workos-for-wordpress'); ?></p>
-                        <p><?php esc_html_e('2. Set up role mappings on the Organization & Roles page so users get the correct WorkOS role during import.', 'workos-for-wordpress'); ?></p>
+                        <p><?php esc_html_e('2. Set up role mappings on the Roles page so users get the correct WorkOS role during import.', 'workos-for-wordpress'); ?></p>
                         <p><?php esc_html_e('3. Test with a small batch first — use the individual sync buttons to verify a few users before running a full sync.', 'workos-for-wordpress'); ?></p>
                         <p><strong><?php esc_html_e('During import:', 'workos-for-wordpress'); ?></strong></p>
                         <p><?php esc_html_e('4. Keep this page open during sync — the process runs in the browser and may take time for large user bases.', 'workos-for-wordpress'); ?></p>

@@ -69,7 +69,7 @@ If you prefer to clone the repository directly:
 
 1. Navigate to **WorkOS > Welcome** in your WordPress admin.
 2. Enter your **API Key** and **Client ID** from the [WorkOS Dashboard](https://dashboard.workos.com).
-3. Go to **WorkOS > Organization & Roles** and enter your **Organization ID**.
+3. Go to **WorkOS > Roles** and enter your **Organization ID**.
 4. In your WorkOS Dashboard, add your callback URL as a **Redirect URI**:
    ```
    https://your-site.com/workos/callback
@@ -111,7 +111,7 @@ When the plugin is configured, the WordPress login page (`wp-login.php`) automat
 
 Bind your WordPress site to a WorkOS organization and map WorkOS roles to WordPress roles.
 
-1. Go to **WorkOS > Organization & Roles**.
+1. Go to **WorkOS > Roles**.
 2. Enter your Organization ID (or set it via `WORKOS_ORGANIZATION_ID` in `wp-config.php`).
 3. Add role mappings — for example, map the WorkOS `admin` role to the WordPress `administrator` role, and `member` to `editor`.
 
