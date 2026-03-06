@@ -101,6 +101,9 @@ class Plugin {
         add_action('admin_bar_menu', [$this, 'admin_bar_workos_node'], 100);
         add_action('wp_head', [$this, 'admin_bar_inline_styles']);
         add_action('admin_head', [$this, 'admin_bar_inline_styles']);
+
+        // Show plugin version in admin footer on WorkOS pages.
+        add_filter('admin_footer_text', [$this, 'admin_footer_version']);
     }
 
     /**
@@ -236,6 +239,21 @@ class Plugin {
             }
         </style>
         <?php
+    }
+
+    /**
+     * Show plugin version in the admin footer on WorkOS settings pages.
+     */
+    public function admin_footer_version(string $text): string {
+        $screen = get_current_screen();
+        if ($screen && str_contains($screen->id, 'workos')) {
+            return sprintf(
+                'WorkOS for WordPress v%s | %s',
+                WORKOS_WP_VERSION,
+                $text
+            );
+        }
+        return $text;
     }
 
     /**
