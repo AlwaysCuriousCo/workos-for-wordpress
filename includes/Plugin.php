@@ -1994,6 +1994,161 @@ define( 'WORKOS_ORGANIZATION_ID', 'org_...' );</code></pre>
                 </tbody>
             </table>
         </div>
+
+        <?php $this->render_updater_diagnostics(); ?>
+        <?php
+    }
+
+    /**
+     * Render self-update diagnostics card on the Diagnostics page.
+     */
+    private function render_updater_diagnostics(): void {
+        $github_repo = 'AlwaysCuriousCo/workos-for-wordpress';
+        $api_url = "https://api.github.com/repos/{$github_repo}/releases/latest";
+        $current_version = WORKOS_WP_VERSION;
+        $plugin_slug = plugin_basename(WORKOS_WP_PLUGIN_FILE);
+
+        // Fetch from GitHub directly (no cache).
+        $response = wp_remote_get($api_url, [
+            'headers' => [
+                'Accept'     => 'application/vnd.github.v3+json',
+                'User-Agent' => 'WorkOS-WordPress-Plugin/' . $current_version,
+            ],
+            'timeout' => 10,
+        ]);
+
+        $github_ok = false;
+        $github_error = '';
+        $remote_version = '';
+        $zip_url = '';
+        $http_code = 0;
+
+        if (is_wp_error($response)) {
+            $github_error = $response->get_error_message();
+        } else {
+            $http_code = wp_remote_retrieve_response_code($response);
+            if ($http_code !== 200) {
+                $github_error = sprintf('HTTP %d', $http_code);
+            } else {
+                $body = json_decode(wp_remote_retrieve_body($response), true);
+                if (!empty($body['tag_name'])) {
+                    $github_ok = true;
+                    $remote_version = ltrim($body['tag_name'], 'v');
+                    // Find zip asset.
+                    foreach ($body['assets'] ?? [] as $asset) {
+                        if (str_starts_with($asset['name'], 'workos-for-wordpress') && str_ends_with($asset['name'], '.zip')) {
+                            $zip_url = $asset['browser_download_url'];
+                            break;
+                        }
+                    }
+                    if (empty($zip_url)) {
+                        $zip_url = "https://github.com/{$github_repo}/releases/latest/download/workos-for-wordpress.zip";
+                    }
+                } else {
+                    $github_error = 'No tag_name in response';
+                }
+            }
+        }
+
+        // Check transient cache state (version-scoped key matches Updater).
+        $cache_key = 'workos_wp_update_' . md5($current_version);
+        $cached = get_transient($cache_key);
+        $cache_status = 'empty';
+        if ($cached === 'none') {
+            $cache_status = 'failure sentinel (none)';
+        } elseif (is_array($cached) && !empty($cached['tag_name'])) {
+            $cache_status = 'cached: ' . $cached['tag_name'];
+        } elseif ($cached !== false) {
+            $cache_status = 'unexpected: ' . gettype($cached) . ' = ' . var_export($cached, true);
+        }
+
+        // Check WordPress update transient.
+        $update_transient = get_site_transient('update_plugins');
+        $wp_sees_update = false;
+        $wp_no_update = false;
+        if (is_object($update_transient)) {
+            if (isset($update_transient->response[$plugin_slug])) {
+                $wp_sees_update = true;
+            }
+            if (isset($update_transient->no_update[$plugin_slug])) {
+                $wp_no_update = true;
+            }
+        }
+        $checked_version = $update_transient->checked[$plugin_slug] ?? 'not in checked array';
+
+        $update_available = $github_ok && version_compare($current_version, $remote_version, '<');
+        ?>
+        <div class="workos-card">
+            <div class="workos-card-header">
+                <h2><?php esc_html_e('Self-Update Check', 'workos-for-wordpress'); ?></h2>
+            </div>
+
+            <?php if ($github_ok): ?>
+                <div class="workos-alert <?php echo $update_available ? 'workos-alert-warning' : 'workos-alert-success'; ?>">
+                    <?php if ($update_available): ?>
+                        <?php echo esc_html(sprintf(__('Update available: %s → %s', 'workos-for-wordpress'), $current_version, $remote_version)); ?>
+                    <?php else: ?>
+                        <?php echo esc_html(sprintf(__('You are running the latest version (%s).', 'workos-for-wordpress'), $current_version)); ?>
+                    <?php endif; ?>
+                </div>
+            <?php else: ?>
+                <div class="workos-alert workos-alert-error">
+                    <?php echo esc_html(sprintf(__('GitHub API error: %s', 'workos-for-wordpress'), $github_error)); ?>
+                </div>
+            <?php endif; ?>
+
+            <table class="workos-table">
+                <tbody>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('Installed Version', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value"><?php echo esc_html($current_version); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('GitHub Latest', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value"><?php echo esc_html($remote_version ?: '—'); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('Plugin Basename', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value"><?php echo esc_html($plugin_slug); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('WP Checked Version', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value"><?php echo esc_html($checked_version); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('Updater Cache', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value"><?php echo esc_html($cache_status); ?></span></td>
+                    </tr>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('WP Sees Update', 'workos-for-wordpress'); ?></td>
+                        <td>
+                            <?php if ($wp_sees_update): ?>
+                                <span class="workos-badge workos-badge-success"><?php esc_html_e('Yes', 'workos-for-wordpress'); ?></span>
+                            <?php elseif ($wp_no_update): ?>
+                                <span class="workos-badge workos-badge-muted"><?php esc_html_e('No (checked, up to date)', 'workos-for-wordpress'); ?></span>
+                            <?php else: ?>
+                                <span class="workos-badge workos-badge-warning"><?php esc_html_e('Not in transient', 'workos-for-wordpress'); ?></span>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php if ($zip_url): ?>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('Download URL', 'workos-for-wordpress'); ?></td>
+                        <td><span class="workos-diag-value" style="word-break:break-all;"><?php echo esc_html($zip_url); ?></span></td>
+                    </tr>
+                    <?php endif; ?>
+                    <tr>
+                        <td class="workos-table-label"><?php esc_html_e('GitHub API', 'workos-for-wordpress'); ?></td>
+                        <td>
+                            <span class="workos-diag-value"><?php echo esc_html($api_url); ?></span>
+                            <span class="workos-badge <?php echo $github_ok ? 'workos-badge-success' : 'workos-badge-error'; ?>">
+                                <?php echo esc_html($github_ok ? 'HTTP 200' : "HTTP {$http_code}"); ?>
+                            </span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <?php
     }
 }

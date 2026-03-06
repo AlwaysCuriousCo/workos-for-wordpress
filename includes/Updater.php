@@ -10,16 +10,21 @@ class Updater {
     private string $plugin_slug;
     private string $version;
     private string $github_repo = 'AlwaysCuriousCo/workos-for-wordpress';
-    private string $cache_key = 'workos_wp_update_check';
+    private string $cache_key;
     private int $cache_ttl = 43200; // 12 hours
 
     public function __construct(string $plugin_file, string $version) {
         $this->plugin_file = $plugin_file;
         $this->plugin_slug = plugin_basename($plugin_file);
         $this->version = $version;
+        // Version-scoped cache key so upgrades automatically invalidate stale data.
+        $this->cache_key = 'workos_wp_update_' . md5($version);
     }
 
     public function register_hooks(): void {
+        // Clean up legacy cache key from older versions.
+        delete_transient('workos_wp_update_check');
+
         add_filter('pre_set_site_transient_update_plugins', [$this, 'check_for_update']);
         add_filter('plugins_api', [$this, 'plugin_info'], 10, 3);
         add_filter('plugin_row_meta', [$this, 'plugin_row_meta'], 10, 2);
@@ -36,9 +41,16 @@ class Updater {
             $transient = new \stdClass();
         }
 
-        if (empty($transient->checked)) {
-            return $transient;
+        // Ensure response/no_update arrays exist.
+        if (!isset($transient->response) || !is_array($transient->response)) {
+            $transient->response = [];
         }
+        if (!isset($transient->no_update) || !is_array($transient->no_update)) {
+            $transient->no_update = [];
+        }
+
+        // Don't bail on empty checked — some hosts/caches clear it.
+        // We still run the check and let version_compare decide.
 
         $release = $this->get_latest_release();
         if (!$release) {
@@ -60,8 +72,9 @@ class Updater {
                 'requires_php' => '8.1',
                 'requires'     => '6.4',
             ];
+            // Remove from no_update if previously marked.
+            unset($transient->no_update[$this->plugin_slug]);
         } else {
-            // Tell WordPress we checked and there's no update.
             $transient->no_update[$this->plugin_slug] = (object) [
                 'slug'        => dirname($this->plugin_slug),
                 'plugin'      => $this->plugin_slug,
@@ -134,13 +147,20 @@ class Updater {
      * Fetch the latest release from GitHub, with caching.
      */
     private function get_latest_release(): ?array {
-        $cached = get_transient($this->cache_key);
-        if (is_array($cached) && !empty($cached['tag_name'])) {
-            return $cached;
-        }
-        // If cached as 'none', a previous check found nothing — respect the TTL.
-        if ($cached === 'none') {
-            return null;
+        // Bypass cache when WordPress is doing a forced update check.
+        $force_check = isset($_GET['force-check']) || (defined('DOING_CRON') && DOING_CRON);
+
+        if (!$force_check) {
+            $cached = get_transient($this->cache_key);
+            if (is_array($cached) && !empty($cached['tag_name'])) {
+                return $cached;
+            }
+            // If cached as 'none', a previous check found nothing — respect the TTL.
+            if ($cached === 'none') {
+                return null;
+            }
+        } else {
+            delete_transient($this->cache_key);
         }
 
         $response = wp_remote_get(
